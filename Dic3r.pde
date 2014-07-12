@@ -5,8 +5,8 @@
 
 float maxError = 0.4; // maximum error in millimeters
 int pointMax = 32767;
-String inFileName = "Bobbin.gcode";
-String outFileName = "Bobbin_Dic3d.gcode";
+String inFileName = "design.gcode";
+String outFileName = "design_Dic3d.gcode";
 String[] infile;
 PVector[] pos = new PVector[pointMax];
 PVector[] prevPos = new PVector[pointMax];
@@ -19,19 +19,40 @@ boolean prevSmashed = false;  // keep from smashing overlapping layers
 float debug;
 int startLine = 0;
 int endLine = 0;
+boolean done = false;
 
 
 void setup()
 {
   // basic setup
-  size(256, 128, P3D);
-  fill(255);
+  size(640, 480, P3D);
+  fill(0, 255, 255);
   stroke(127);
   textAlign(CENTER, CENTER);
+  textSize(42);
   
   // read the input file
-  infile = loadStrings(inFileName);
+  selectInput("Select an input file:", "fileSelected");
+}
   
+ 
+void draw()
+{
+  background(191, 63, 127);
+
+  if (done)
+    printText();
+  else
+    text(nf(frameCount, 0, 0), width/2, height/2);
+}
+
+
+
+// smash layers
+void combineLayers()
+{
+  // save xyz points in arrays
+  // 
   // go thru each line in the file
   for (int line = 0; line < infile.length; line++)
   {
@@ -102,25 +123,40 @@ void setup()
       }
     }
   }
-  
-  // save the output file
-  saveStrings(outFileName, infile);
 }
 
-
-void draw()
+void fileSelected(File selection)
 {
-  printText();
+  if (selection != null)
+  {
+    inFileName = selection.getAbsolutePath();
+    
+    // read the input file
+    infile = loadStrings(inFileName);
+    
+    // smash layers
+    combineLayers();
+    
+    // save the output file
+    String[] tokens = splitTokens(inFileName, ".");
+    int index = tokens.length - 2;
+    if (index >=0)
+    {
+      tokens[index] = tokens[index] + "_Dic3d";
+      outFileName = join(tokens, ".");
+    }
+    saveStrings(outFileName, infile);
+    
+    done = true;
+  }
 }
 
 
 void printText()
 {
-  background(0);
   text(nf(totalLines, 0, 0) + " G1 lines\n" + 
     nf(layer, 0, 0) + " layers\n" + 
-    nf(numSmashed, 0, 0) + " layers smashed\n" + 
-    nf(debug, 0, 6) + " debug",  
+    nf(numSmashed, 0, 0) + " layers dic3d\n", 
     width/2, height/2);
 }
 
